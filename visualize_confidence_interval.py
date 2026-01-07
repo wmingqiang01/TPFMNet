@@ -12,7 +12,7 @@ from sklearn.metrics import r2_score, accuracy_score, balanced_accuracy_score
 # sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 # from config import configs
 # from utils.utils_2 import SIC_dataset
-# from models.TPFUNet import TPFUNet
+# from models.TPFMNet import TPFMNet
 
 warnings.filterwarnings('ignore')
 
@@ -272,13 +272,13 @@ def load_model_and_data(checkpoint_path=None, uncertainty_type="laplacian", star
 
     from config import configs
     from utils.utils_2 import SIC_dataset
-    from models.TPFUNet import TPFUNet
+    from models.TPFMNet import TPFMNet
 
     # 初始化模型
-    model = TPFUNet(T=configs.input_length, C=configs.input_dim, uncertainty_type='laplacian')
+    model = TPFMNet(T=configs.input_length, C=configs.input_dim, uncertainty_type='laplacian')
     
     if checkpoint_path is None:
-        checkpoint_path = f'./pretrained_models/TPFUNet{configs.input_length}_{configs.pred_length}.pth'
+        checkpoint_path = f'./pretrained_models/TPFMNet{configs.input_length}_{configs.pred_length}.pth'
     
     if os.path.exists(checkpoint_path):
         try:
@@ -473,8 +473,8 @@ def main(checkpoint_path=None, uncertainty_type="laplacian", threshold=0.15, sav
 
 if __name__ == "__main__":
     main(
-        # checkpoint_path='/root/shared-nvme/wmq/my_model/best/TPFUNet_12_12.pth',
-        checkpoint_path='/root/shared-nvme/wmq/my_model/best/TPFUNet_12_12.pth',
+        # checkpoint_path='/root/shared-nvme/wmq/my_model/best/TPFMNet_12_12.pth',
+        checkpoint_path='/root/shared-nvme/wmq/my_model/best/TPFMNet_12_12.pth',
         uncertainty_type="laplacian",
         threshold=0.15,
         save_all_months=True,

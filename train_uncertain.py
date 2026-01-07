@@ -13,7 +13,7 @@ from utils.utils_2 import SIC_dataset
 from utils.metrics import *
 from utils.tools import setup_logging
 from models.ConvNeXt_uncertain import ConvNext 
-from models.TPFUNet import TPFUNet 
+from models.TPFMNet import TPFMNet 
 from warnings import filterwarnings
 filterwarnings("ignore")
 from sklearn.metrics import r2_score
@@ -159,8 +159,8 @@ if __name__ == "__main__":
     logger = setup_logging(os.path.join(log_dir, "train.log"))
     
     # 初始化模型
-    # model = TPFUNet(T=configs.input_length, C=configs.input_dim, uncertainty_type='laplacian').to(device)
-    model = TPFUNet(T=configs.input_length, C=configs.input_dim, uncertainty_type='gaussian').to(device)
+    # model = TPFMNet(T=configs.input_length, C=configs.input_dim, uncertainty_type='laplacian').to(device)
+    model = TPFMNet(T=configs.input_length, C=configs.input_dim, uncertainty_type='gaussian').to(device)
     land_mask_np = np.load(configs.mask_path)
     land_mask = torch.from_numpy(land_mask_np).to(device)
     
@@ -182,7 +182,7 @@ if __name__ == "__main__":
     total_batches = len(dataloader_train)
     
     # 打印训练信息
-    logger.info(f"开始训练 TPFUNet_uncertain 模型")
+    logger.info(f"开始训练 TPFMNet_uncertain 模型")
     logger.info(f"训练集样本数: {len(dataset_train)}, 验证集样本数: {len(dataset_vali)}, 测试集样本数: {len(dataset_test)}")
     logger.info(f"批次大小: {configs.batch_size}, 验证/测试批次大小: {configs.batch_size_vali}")
     logger.info(f"学习率: {configs.lr}, 最大训练轮数: {configs.num_epochs}, 早停耐心值: {configs.patience}")
@@ -304,7 +304,7 @@ if __name__ == "__main__":
                     'optimizer_state_dict': optimizer.state_dict(),
                     'composite_score': best_composite_score, # 记录复合分数
                 },
-                os.path.join(checkpoint_dir, f"TPFUNet_{configs.input_length}_{configs.pred_length}_gaussian.pth")
+                os.path.join(checkpoint_dir, f"TPFMNet_{configs.input_length}_{configs.pred_length}_gaussian.pth")
             )
             logger.info(f"Saved best model with Composite Score: {best_composite_score:.6f}")
         else:
@@ -324,7 +324,7 @@ if __name__ == "__main__":
     logger.info(f"最佳验证复合分数: {best_composite_score:.6f}")
     
     # 打印最终模型路径
-    final_model_path = os.path.join(checkpoint_dir, f"TPFUNet_{configs.input_length}_{configs.pred_length}.pth")
+    final_model_path = os.path.join(checkpoint_dir, f"TPFMNet_{configs.input_length}_{configs.pred_length}.pth")
     logger.info(f"最佳模型保存路径: {final_model_path}")
     
     # --- 测试阶段 ---

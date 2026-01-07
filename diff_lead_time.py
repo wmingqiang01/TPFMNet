@@ -227,12 +227,12 @@ def evaluate_and_plot_gpu(model, dataset, land_mask_np, max_sie_dict,
 # 主程序
 # ==============================
 def main():
-    ckpt_path = '/root/shared-nvme/wmq/my_model/pretrained_models/TPFUNet_12_12.pth'
+    ckpt_path = '/root/shared-nvme/wmq/my_model/pretrained_models/TPFMNet_12_12.pth'
 
     # 1. 加载模型
     from config import configs
-    from models.TPFUNet import TPFUNet
-    model = TPFUNet(T=configs.input_length, C=configs.input_dim, uncertainty_type='laplacian')
+    from models.TPFMNet import TPFMNet
+    model = TPFMNet(T=configs.input_length, C=configs.input_dim, uncertainty_type='laplacian')
     ckpt = torch.load(ckpt_path, map_location=device,weights_only=False)
     model.load_state_dict(ckpt['model_state_dict'] if 'model_state_dict' in ckpt else ckpt, strict=False)
     print("Model loaded")

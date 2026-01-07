@@ -152,7 +152,7 @@ def main_clean_plot(checkpoint_path, target_month_str='202209'):
     try:
         from config import configs
         from utils.utils_2 import SIC_dataset
-        from models.TPFUNet import TPFUNet
+        from models.TPFMNet import TPFMNet
     except ImportError:
         print("Error: 请在项目根目录运行。")
         return
@@ -160,7 +160,7 @@ def main_clean_plot(checkpoint_path, target_month_str='202209'):
     print(f">>> 开始处理: {target_month_str} (Zorder修正版) <<<")
 
     # 1. 模型与数据
-    model = TPFUNet(T=configs.input_length, C=configs.input_dim, uncertainty_type='laplacian')
+    model = TPFMNet(T=configs.input_length, C=configs.input_dim, uncertainty_type='laplacian')
     if os.path.exists(checkpoint_path):
         checkpoint = torch.load(checkpoint_path, map_location='cpu',weights_only=False)
         model.load_state_dict(checkpoint['model_state_dict'], strict=False)
@@ -268,5 +268,5 @@ def main_clean_plot(checkpoint_path, target_month_str='202209'):
 
 if __name__ == "__main__":
     # 路径配置
-    ckpt = '/root/shared-nvme/wmq/my_model/best/TPFUNet_12_12.pth'
+    ckpt = '/root/shared-nvme/wmq/my_model/best/TPFMNet_12_12.pth'
     main_clean_plot(ckpt, '202209')

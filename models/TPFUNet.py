@@ -271,7 +271,7 @@ class CoordAtt(nn.Module):
         return out
 
 
-class TPFU(nn.Module):
+class TPFM(nn.Module):
     def __init__(self, dim, kernel_size=7, smk_size=5, num_heads=2, mlp_ratio=4.0, 
                  res_scale=False, ls_init_value=1e-6, drop_path=0., 
                  norm_layer=LayerNorm2d, use_gemm=False, deploy=False, 
@@ -538,7 +538,7 @@ class MetaBlock(nn.Module):
         self.in_channels = in_channels
         self.out_channels = out_channels
         
-        self.block = TPFU(
+        self.block = TPFM(
             dim=in_channels,
             kernel_size=7,
             smk_size=5,
@@ -571,7 +571,7 @@ class MidMetaNet(nn.Module):
         
         self.enc = nn.Sequential(*enc_layers)
         
-        self.bottleneck = TPFU(
+        self.bottleneck = TPFM(
             dim=channel_in, 
             kernel_size=7, 
             smk_size=5, 
@@ -604,10 +604,10 @@ class MidMetaNet(nn.Module):
             if hasattr(m, 'merge_dilated_branches'):
                 m.merge_dilated_branches()
 
-class TPFUNet(nn.Module):
+class TPFMNet(nn.Module):
     def __init__(self, T=12, C=1, hid_S=32, hid_T=512, N_S=6, N_T=6, spatio_kernel_enc=3, spatio_kernel_dec=3,
                  act_inplace=False, mlp_ratio=4.0, use_grn=True, drop_path=0.1, uncertainty_type='gaussian'):
-        super(TPFUNet, self).__init__()
+        super(TPFMNet, self).__init__()
         self.uncertainty_type = uncertainty_type
         self.T = T
         self.C = C
