@@ -12,8 +12,7 @@ from config import configs
 from utils.utils_2 import SIC_dataset
 from utils.metrics import *
 from utils.tools import setup_logging
-from models.ConvNeXt_uncertain import ConvNext 
-from models.TPFMNet import TPFMNet 
+from models.TPFUNet import TPFUNet 
 from warnings import filterwarnings
 filterwarnings("ignore")
 from sklearn.metrics import r2_score
@@ -79,7 +78,6 @@ dataloader_test = DataLoader(
     num_workers=configs.num_workers,
 )
 
-# --- 指标计算函数（已修改为仅计算海洋部分） ---
 def calculate_metrics(mu, targets, dataset, land_mask, device, prefix=""):
     mu_np = mu[:, :, 0, :, :].detach().cpu().numpy()
     targets_np = targets[:, :, 0, :, :].detach().cpu().numpy()
@@ -92,7 +90,6 @@ def calculate_metrics(mu, targets, dataset, land_mask, device, prefix=""):
 
     num_batches = mu_np.shape[0]
     num_times = mu_np.shape[1]
-    # land_mask=True 假设为海洋区域
     land_mask_flat = np.tile(land_mask_np.flatten(), num_batches * num_times)
     ocean_mask = land_mask_flat == True 
 
@@ -113,10 +110,6 @@ def calculate_metrics(mu, targets, dataset, land_mask, device, prefix=""):
     # 计算 loss 时不进行反归一化，使用MSE损失
     mse_loss = np.mean((pred_valid - target_valid) ** 2)
 
-    # SIC大于等于0.15的才算
-    # 注意：这里直接在 pred_valid 和 target_valid 上应用了 > 0.15 过滤，这可能会改变它们的维度。
-    # 为了保持一致性，我们应该对整个有效集应用过滤，或仅对计算 MAE/RMSE 时进行过滤。
-    # 按照代码逻辑，我们对 pred/target 进行 SIC 阈值过滤后再计算 MAE/RMSE
     pred_sic = pred_valid * (pred_valid >= 0.15)
     targets_sic = target_valid * (target_valid >= 0.15)
 
@@ -159,8 +152,8 @@ if __name__ == "__main__":
     logger = setup_logging(os.path.join(log_dir, "train.log"))
     
     # 初始化模型
-    # model = TPFMNet(T=configs.input_length, C=configs.input_dim, uncertainty_type='laplacian').to(device)
-    model = TPFMNet(T=configs.input_length, C=configs.input_dim, uncertainty_type='gaussian').to(device)
+    model = TPFUNet(T=configs.input_length, C=configs.input_dim, uncertainty_type='laplacian').to(device)
+    # model = TPFUNet(T=configs.input_length, C=configs.input_dim, uncertainty_type='gaussian').to(device)
     land_mask_np = np.load(configs.mask_path)
     land_mask = torch.from_numpy(land_mask_np).to(device)
     
@@ -172,8 +165,7 @@ if __name__ == "__main__":
         epochs=configs.num_epochs,
         steps_per_epoch=len(dataloader_train),
     )
-    
-    # ********************* 修改点 1：使用复合分数初始化 *********************
+
     best_composite_score = float('inf')
     patience_counter = 0
     
@@ -182,7 +174,7 @@ if __name__ == "__main__":
     total_batches = len(dataloader_train)
     
     # 打印训练信息
-    logger.info(f"开始训练 TPFMNet_uncertain 模型")
+    logger.info(f"开始训练 TPFUNet_uncertain 模型")
     logger.info(f"训练集样本数: {len(dataset_train)}, 验证集样本数: {len(dataset_vali)}, 测试集样本数: {len(dataset_test)}")
     logger.info(f"批次大小: {configs.batch_size}, 验证/测试批次大小: {configs.batch_size_vali}")
     logger.info(f"学习率: {configs.lr}, 最大训练轮数: {configs.num_epochs}, 早停耐心值: {configs.patience}")
@@ -214,7 +206,7 @@ if __name__ == "__main__":
             inputs = inputs * ocean_mask
             
             optimizer.zero_grad()
-            # 假设 model(inputs, targets, is_training=True) 返回 (mu, sigma), total_loss (NLL)
+            # model(inputs, targets, is_training=True) 返回 (mu, sigma), total_loss (NLL)
             (mu, sigma), total_loss = model(inputs, targets, is_training=True) 
             
             metrics, _ = calculate_metrics(mu, targets, dataset_train, land_mask, device)
@@ -271,7 +263,6 @@ if __name__ == "__main__":
         # 计算平均验证指标
         val_metrics = {k: v / val_count if val_count > 0 else np.nan for k, v in val_metrics_sum.items()}
         
-        # ********************* 修改点 2：计算复合分数 *********************
         # 简单相加三个要最小化的指标作为复合分数
         current_composite_score = (
             val_metrics["val_loss"] + 
@@ -291,9 +282,8 @@ if __name__ == "__main__":
                             f"Val MAE: {val_metrics['val_mae_sic']:.6f} - "
                             f"Val RMSE: {val_metrics['val_rmse_sic']:.6f} - "
                             f"Val R^2: {val_metrics['val_R^2_sic']:.6f} - "
-                            f"Composite Score: {current_composite_score:.6f}") # 打印复合分数
+                            f"Composite Score: {current_composite_score:.6f}") 
         
-        # ********************* 修改点 3：使用复合分数保存模型 *********************
         if current_composite_score < best_composite_score:
             best_composite_score = current_composite_score
             patience_counter = 0
@@ -304,7 +294,7 @@ if __name__ == "__main__":
                     'optimizer_state_dict': optimizer.state_dict(),
                     'composite_score': best_composite_score, # 记录复合分数
                 },
-                os.path.join(checkpoint_dir, f"TPFMNet_{configs.input_length}_{configs.pred_length}_gaussian.pth")
+                os.path.join(checkpoint_dir, f"TPFUNet_{configs.input_length}_{configs.pred_length}.pth")
             )
             logger.info(f"Saved best model with Composite Score: {best_composite_score:.6f}")
         else:
@@ -324,7 +314,7 @@ if __name__ == "__main__":
     logger.info(f"最佳验证复合分数: {best_composite_score:.6f}")
     
     # 打印最终模型路径
-    final_model_path = os.path.join(checkpoint_dir, f"TPFMNet_{configs.input_length}_{configs.pred_length}.pth")
+    final_model_path = os.path.join(checkpoint_dir, f"TPFUNet_{configs.input_length}_{configs.pred_length}.pth")
     logger.info(f"最佳模型保存路径: {final_model_path}")
     
     # --- 测试阶段 ---
